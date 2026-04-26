@@ -1,7 +1,7 @@
 {
   "rewrites": [
-    { "source": "/diagnose/:path*", "destination": "https://YOUR_RAILWAY_URL/diagnose/:path*" },
-    { "source": "/extract-image",   "destination": "https://YOUR_RAILWAY_URL/extract-image" },
-    { "source": "/compare",         "destination": "https://YOUR_RAILWAY_URL/compare" }
+    { "source": "/diagnose/:path*", "destination": "https://dyrx.vercel.app/diagnose/:path*" },
+    { "source": "/extract-image",   "destination": "https://dyrx.vercel.app/extract-image" },
+    { "source": "/compare",         "destination": "https://dyrx.vercel.app/compare" }
   ]
 }
