@@ -1,4 +1,4 @@
-from .base_agent import BaseAgent, _vision_client, _VISION_MODEL
+from .base_agent import BaseAgent, _get_vision_client, _VISION_MODEL
 
 SYSTEM_PROMPT = """你是「封面诊断师 Agent」，负责评估抖音视频封面的吸引力。
 
@@ -47,13 +47,13 @@ class CoverAgent(BaseAgent):
 
     def analyze(self, input_data: dict) -> dict:
         cover_b64 = input_data.get("cover_base64")
-        if cover_b64 and _vision_client:
+        if cover_b64 and _get_vision_client():
             return self._analyze_with_vision(input_data, cover_b64)
         return super().analyze(input_data)
 
     def analyze_with_context(self, input_data: dict, context: str) -> dict:
         cover_b64 = input_data.get("cover_base64")
-        if cover_b64 and _vision_client:
+        if cover_b64 and _get_vision_client():
             return self._analyze_with_vision(input_data, cover_b64, context=context)
         return super().analyze_with_context(input_data, context)
 
@@ -72,7 +72,7 @@ class CoverAgent(BaseAgent):
             system += "\n\n这是Round 2，请结合其他Agent的结论，更新你对封面的评分。"
 
         try:
-            resp = _vision_client.chat.completions.create(  # type: ignore[union-attr]
+            resp = _get_vision_client().chat.completions.create(  # type: ignore[union-attr]
                 model=_VISION_MODEL,
                 messages=[
                     {"role": "system", "content": system},

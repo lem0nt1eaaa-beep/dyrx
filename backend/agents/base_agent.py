@@ -11,26 +11,41 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-_client = OpenAI(
-    api_key=os.getenv("DEEPSEEK_API_KEY"),
-    base_url="https://api.deepseek.com/v1",
-    http_client=httpx.Client(timeout=60.0, trust_env=False),
-)
 MOCK_MODE = os.getenv("MOCK_MODE", "false").lower() == "true"
 MODEL = "deepseek-chat"
 
-# Optional vision client (Qwen-VL or any OpenAI-compatible vision API)
 _VISION_API_KEY  = os.getenv("VISION_API_KEY")
 _VISION_BASE_URL = os.getenv("VISION_BASE_URL", "https://dashscope.aliyuncs.com/compatible-mode/v1")
 _VISION_MODEL    = os.getenv("VISION_MODEL", "qwen-vl-plus")
 
+# Lazy-initialized clients — avoid crash on startup when env vars aren't loaded yet
+_client: OpenAI | None = None
 _vision_client: OpenAI | None = None
-if _VISION_API_KEY:
-    _vision_client = OpenAI(
-        api_key=_VISION_API_KEY,
-        base_url=_VISION_BASE_URL,
-        http_client=httpx.Client(timeout=60.0, trust_env=False),
-    )
+
+
+def _get_client() -> OpenAI:
+    global _client
+    if _client is None:
+        api_key = os.getenv("DEEPSEEK_API_KEY")
+        if not api_key:
+            raise RuntimeError("DEEPSEEK_API_KEY 未设置，请在 Railway Variables 中添加")
+        _client = OpenAI(
+            api_key=api_key,
+            base_url="https://api.deepseek.com/v1",
+            http_client=httpx.Client(timeout=60.0, trust_env=False),
+        )
+    return _client
+
+
+def _get_vision_client() -> OpenAI | None:
+    global _vision_client
+    if _vision_client is None and _VISION_API_KEY:
+        _vision_client = OpenAI(
+            api_key=_VISION_API_KEY,
+            base_url=_VISION_BASE_URL,
+            http_client=httpx.Client(timeout=60.0, trust_env=False),
+        )
+    return _vision_client
 
 _MOCK_RESPONSES = {
     "comment_bait": {
@@ -93,10 +108,11 @@ _MOCK_RESPONSES = {
 
 def extract_from_image(base64_image: str) -> dict:
     """Use vision model to extract title/content from a screenshot. Returns {} if vision unavailable."""
-    if not _vision_client:
+    vc = _get_vision_client()
+    if not vc:
         return {}
     try:
-        resp = _vision_client.chat.completions.create(
+        resp = vc.chat.completions.create(
             model=_VISION_MODEL,
             messages=[{
                 "role": "user",
@@ -149,7 +165,7 @@ class BaseAgent:
             return dict(_MOCK_RESPONSES.get(self.dimension, {"dimension": self.dimension, "score": 60, "analysis": "模拟诊断结果", "suggestions": []}))
         user_msg = self._build_user_prompt(input_data)
         try:
-            response = _client.chat.completions.create(
+            response = _get_client().chat.completions.create(
                 model=MODEL,
                 messages=[
                     {"role": "system", "content": self.system_prompt},
@@ -169,7 +185,7 @@ class BaseAgent:
         user_msg = self._build_user_prompt(input_data)
         full_msg = f"{user_msg}\n\n---\n其他Agent的Round 1结论：\n{context}"
         try:
-            response = _client.chat.completions.create(
+            response = _get_client().chat.completions.create(
                 model=MODEL,
                 messages=[
                     {"role": "system", "content": self.system_prompt + "\n\n这是Round 2，请结合其他Agent的结论，提出质疑或补充，并更新你的评分。"},
