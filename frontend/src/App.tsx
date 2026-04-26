@@ -32,10 +32,12 @@ const theme = createTheme({
     },
     MuiButton: {
       styleOverrides: {
-        containedPrimary: {
-          background: 'linear-gradient(135deg, #fe2c55 0%, #c41e3a 100%)',
-          boxShadow: '0 4px 24px rgba(254,44,85,0.35)', fontWeight: 700,
-          '&:hover': { background: 'linear-gradient(135deg, #ff4d70 0%, #fe2c55 100%)', boxShadow: '0 6px 32px rgba(254,44,85,0.5)', transform: 'translateY(-1px)' },
+        root: {
+          '&.MuiButton-containedPrimary': {
+            background: 'linear-gradient(135deg, #fe2c55 0%, #c41e3a 100%)',
+            boxShadow: '0 4px 24px rgba(254,44,85,0.35)', fontWeight: 700,
+            '&:hover': { background: 'linear-gradient(135deg, #ff4d70 0%, #fe2c55 100%)', boxShadow: '0 6px 32px rgba(254,44,85,0.5)', transform: 'translateY(-1px)' },
+          },
         },
       },
     },
