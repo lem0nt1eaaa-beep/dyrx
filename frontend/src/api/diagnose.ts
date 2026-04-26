@@ -55,8 +55,11 @@ export interface SeedComment {
   predicted_likes: number;
 }
 
+// 本地开发走 Vite proxy，生产直连 Railway 后端（避免 Vercel 代理多一跳影响 SSE）
+const API_BASE = import.meta.env.VITE_API_URL ?? '';
+
 export async function startDiagnose(req: DiagnoseRequest): Promise<string> {
-  const res = await fetch('/diagnose', {
+  const res = await fetch(`${API_BASE}/diagnose`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(req),
@@ -72,7 +75,7 @@ export function streamDiagnose(
   onDone: () => void,
   onError: (err: string) => void
 ): () => void {
-  const es = new EventSource(`/diagnose/${taskId}/stream`);
+  const es = new EventSource(`${API_BASE}/diagnose/${taskId}/stream`);
 
   es.onmessage = (e) => {
     if (e.data === '[DONE]') { es.close(); onDone(); return; }
@@ -83,10 +86,9 @@ export function streamDiagnose(
   return () => es.close();
 }
 
-/** Extract title/content from a screenshot via vision model. Returns {} if vision not configured. */
 export async function extractFromImage(imageBase64: string): Promise<{ title?: string; content?: string }> {
   try {
-    const res = await fetch('/extract-image', {
+    const res = await fetch(`${API_BASE}/extract-image`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ image_base64: imageBase64 }),
@@ -98,12 +100,11 @@ export async function extractFromImage(imageBase64: string): Promise<{ title?: s
   }
 }
 
-/** Start a compare job. Returns two task IDs. */
 export async function startCompare(
   own: DiagnoseRequest,
   competitor: DiagnoseRequest
 ): Promise<{ own_task_id: string; competitor_task_id: string }> {
-  const res = await fetch('/compare', {
+  const res = await fetch(`${API_BASE}/compare`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ own, competitor }),
